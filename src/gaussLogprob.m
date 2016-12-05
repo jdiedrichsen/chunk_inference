@@ -24,7 +24,7 @@ end
 
 mu = mu(:);
 if any(isnan(X(:)))
-    logp = gaussLogprobMissingData(structure(mu, Sigma), X);
+    logp = gaussLogprobMissingData(mu,Sigma, X);
     return;
 end
 if isscalar(mu)

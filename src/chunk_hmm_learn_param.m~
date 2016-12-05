@@ -138,7 +138,7 @@ while not_exit
     p_obs_un = create_emission_for_chunks(P,Data,Model);
     
     gamma  = nan(nTrials,n_chunks); 
-     marg_epsilon = zeros(n_chunks,n_chunks); 
+     marginal_epsilon = zerp
     for i=1:numSeq 
         indx = find (Data.seqType==i); 
         [~, ~, g, log_like(indx), me] = hmm_inference(p_obs_un(indx,:), P.T, 'initial_dist', P.initial_dist(i,:));
@@ -146,7 +146,7 @@ while not_exit
         numTrials(i)=length(indx);
         numStay(i)  = trace(g(1:end-1, :)' * g(2:end, :)); 
         gammaInit(i,:)   = g(1,:); 
-        marg_epsilon = marg_epsilon+numTrials(i)*me; 
+        marginal_epsilon = marginal_epsilon+numTrials(i)*me; 
         gamma(indx,:)    = g(2:end,:); % Posterior probabilities 
     end; 
     

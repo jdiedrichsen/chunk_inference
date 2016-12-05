@@ -19,12 +19,12 @@ n_chunks = size(chunks, 1);
 for i = 1:n_chunks
     tmp_sem = bsxfun(@times, data, ...
         ind_chunk(i, :));
-    tmp_sem = bsxfun(@times, tmp_sem, gamma(2:end, i));
+    tmp_sem = bsxfun(@times, tmp_sem, gamma(:, i));
     sum_mean_pause = sum_mean_pause + ...
         nansum(tmp_sem(:));
     % Now check how many observations we have 
     tmp_ind = bsxfun(@times,~isnan(data),ind_chunk(i, :)); 
-    tmp_ind = bsxfun(@times,tmp_ind,gamma(2:end, i)); 
+    tmp_ind = bsxfun(@times,tmp_ind,gamma(:, i)); 
     n_mean_pause = n_mean_pause + ...
          sum(tmp_ind(:));
 end
@@ -37,12 +37,12 @@ n_mean_pause = 0;
 for i = 1:n_chunks
     tmp_sem = bsxfun(@times, data, ...
         ind_chunk(i, :));
-    tmp_sem = bsxfun(@times, tmp_sem, gamma(2:end, i));
+    tmp_sem = bsxfun(@times, tmp_sem, gamma(:, i));
     sum_mean_pause = sum_mean_pause + ...
         nansum(tmp_sem(:));
     % Now check how many observations we have 
     tmp_ind = bsxfun(@times,~isnan(data),ind_chunk(i, :)); 
-    tmp_ind = bsxfun(@times,tmp_ind,gamma(2:end, i)); 
+    tmp_ind = bsxfun(@times,tmp_ind,gamma(:, i)); 
     n_mean_pause = n_mean_pause + ...
          sum(tmp_ind(:));
 end

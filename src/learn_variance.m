@@ -16,16 +16,16 @@ for i = 1:n_chunks
         cmt = bsxfun(@minus, data, ...
             ind_chunk_start(i, :)*start_pause + ...
             (~ind_chunk_start(i, :))*nonstart_pause);
-        tmp = bsxfun(@times, cmt.^2, gamma(2:end, i));
+        tmp = bsxfun(@times, cmt.^2, gamma(:, i));
     else
         % no centering needed - mean assumed to be zero
-        tmp = bsxfun(@times, data.^2, gamma(2:end, i));
+        tmp = bsxfun(@times, data.^2, gamma(:, i));
     end
     tmp_var(i) = nansum(tmp(:));
 
     % Keep track of how much data we have for each structure (weighted by
     % Gamma). 
-    tmp_weight(i) = sum(sum(bsxfun(@times,goodData,gamma(2:end, i)))); 
+    tmp_weight(i) = sum(sum(bsxfun(@times,goodData,gamma(:, i)))); 
 end
 v = sum(tmp_var)/sum(sum(tmp_weight));
 % Comment (JD): this seems to be a unnecessary complication? Since we are

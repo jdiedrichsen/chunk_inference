@@ -1,6 +1,4 @@
-function [mt_cov, p_obs, T, p_obs_un] = ...
-    create_emission_for_chunks(rho, rho_er, self_transition, mt_seq, ...
-    er_seq, varargin)
+function p_obs_un = create_emission_for_chunks(P,Data,Model); 
 % Create emission structure for chunks.
 % Create probability of observation and movement time covariances 
 % according to chunk.
@@ -18,64 +16,43 @@ function [mt_cov, p_obs, T, p_obs_un] = ...
 %    p_obs : probability of observation
 %    T     : transition probabilities across chunks
 
-p = inputParser;
-p.KeepUnmatched = true;
-addParamValue(p, 'v', var(mt_seq(:)), @isnumeric);
-addParamValue(p, 'v_er', var(er_seq(:)), @isnumeric);
-% addParamValue(p, 'model', 'mt_er', @(x)ismember(x, {'mt', 'er', 'mt_er'}));
-addParamValue(p, 'fit_er', true, @islogical);
-addParamValue(p, 'fit_rt', true, @islogical);
-addParamValue(p, 'mean_pause', 0, @isnumeric);
-addParamValue(p, 'mean_inchunk', 0, @isnumeric);
-addParamValue(p, 'mean_pause_er', 0, @isnumeric);
-addParamValue(p, 'mean_inchunk_er', 0, @isnumeric);
-addParamValue(p, 'chunks', [], @ismatrix);
-parse(p, varargin{:});
-v = p.Results.v;
-v_er = p.Results.v_er;
-fit_er = p.Results.fit_er;
-fit_rt = p.Results.fit_rt;
-mean_pause = p.Results.mean_pause;
-mean_inchunk = p.Results.mean_inchunk;
-mean_pause_er = p.Results.mean_pause_er;
-mean_inchunk_er = p.Results.mean_inchunk_er;
-chunks = p.Results.chunks;
 
-if ~fit_er && ~fit_rt
+if ~Model.fit_er && ~Model.fit_rt
     error('Either fit_er or fit_mt must be true');
 end
 % Find best parameters for chunking
 
-if isempty(chunks)
+if isempty(Model.chunks)
     chunks = create_chunks3();    
 end
-cor_chunks = to_corr_chunks(chunks);
-n_chunks = size(chunks, 1);
+cor_chunks = to_corr_chunks(Model.chunks);
+n_chunks = size(Model.chunks, 1);
 
-[chunk_means_mt, mt_cov, chunk_means_er, er_cov] = ...
-    create_chunk_means_covs(chunks, cor_chunks, ...
-        mean_pause, mean_inchunk, v, rho, ...
-        mean_pause_er, mean_inchunk_er, v_er, rho_er);
+if (Model.fit_rt) 
+    [chunk_means_mt, mt_cov] = create_chunk_means_covs(Model,P,'mt'); 
+end; 
+if (Model.fit_er) 
+    [chunk_means_er, er_cov] = create_chunk_means_covs(Model,P,'er'); 
+end; 
 
 % Compute probability of observation
-
-n_time = size(mt_seq, 1);
+n_time = size(Data.mt_seq, 1);
 p_obs = zeros(n_time, n_chunks);
 
 for i = 1:n_chunks
-    if fit_rt && fit_er    
+    if Model.fit_rt && Model.fit_er    
         p_obs(:, i) = ...
             gaussLogprob(chunk_means_mt(i, :)', ...
-                    mt_cov(:, :, i), mt_seq) + ...
+                    mt_cov(:, :, i), Data.mt_seq) + ...
             gaussLogprob(chunk_means_er(i, :)', ...
-                    er_cov(:, :, i), er_seq);
-    elseif fit_rt
+                    er_cov(:, :, i), Data.er_seq);
+    elseif Model.fit_rt
         p_obs(:, i) = ...
             gaussLogprob(chunk_means_mt(i, :)', ...
-            mt_cov(:, :, i), mt_seq);
+            mt_cov(:, :, i), Data.mt_seq);
     else
         p_obs(:, i) = gaussLogprob(chunk_means_er(i, :)', ...
-            er_cov(:, :, i), er_seq);
+            er_cov(:, :, i), Data.er_seq);
     end
 end
 % p_obs = exp(normalizeLogspace(p_obs));
@@ -84,9 +61,4 @@ p_obs = exp(p_obs);
 p_obs_un = p_obs;
 
 % Normalize
-p_obs = bsxfun(@rdivide, p_obs, sum(p_obs, 2));
-
-% Transition probability probability of self-transition
-T = ((ones(n_chunks, n_chunks)-eye(n_chunks))*...
-    (1-self_transition))/(n_chunks-1) + ...
-    eye(n_chunks)*self_transition;
+% p_obs = bsxfun(@rdivide, p_obs, sum(p_obs, 2));

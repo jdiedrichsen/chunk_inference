@@ -1,5 +1,4 @@
-function [fm, bm, gamma, log_like, marg_epsilon] = hmm_inference(p_obs, T, ...
-    varargin)
+function [fm, bm, gamma, log_like, marg_epsilon] = hmm_inference(p_obs, T, varargin)
 % Infer forward and backward probability of chunks
 % and the smoothed estimates
 % Inputs:

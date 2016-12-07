@@ -46,9 +46,10 @@ function [P,Model,gamma] = chunk_hmm_learn_param(Data, Model,initialParam,vararg
 p = inputParser;
 p.KeepUnmatched = true;
 addParamValue(p, 'verbose', false, @islogical);
+addParamValue(p, 'maxIter', 30, @isnumeric);
 parse(p, varargin{:});
 verbose = p.Results.verbose;
-
+maxIter = p.Results.maxIter; 
 tic;
 
 P = initialParam;
@@ -59,7 +60,7 @@ if (isfield(Data,'seqType'))
     seq = unique(Data.seqType); 
     numSeq = length(seq); 
 else 
-    Data.seqType = ones(size(D.mt_seq,1),1); 
+    Data.seqType = ones(size(Data.mt_seq,1),1); 
     numSeq = 1; 
 end; 
 
@@ -149,30 +150,35 @@ while not_exit
         marg_epsilon = marg_epsilon+numTrials(i)*me; 
         gamma(indx,:)    = g(2:end,:); % Posterior probabilities 
     end; 
-    
+
+    n_iteration = n_iteration + 1;
     % Feedback if required 
     if verbose
-        n_iteration = n_iteration + 1;
         
         fprintf('Iteration: %.0f (elapsed time: %.1f s)\n', n_iteration, ...
             toc);
         fprintf(['\t log_like        = %f\n'], sum(log_like));
+        fprintf(['\t self_t        = %f\n'], P.self_t);
+        fprintf(['\t mean_pause    = %f\n'], P.mean_pause);
+        fprintf(['\t mean_inchunk  = %f\n'], P.mean_inchunk);
+        fprintf(['\t rho           = %f\n'], P.rho);
+        
     end
     
     % Update likelihood
-    delta_fval = abs(sum(log_like) - current_log_like);
-    avg_fval = ((abs(sum(log_like)) + abs(current_log_like))+eps)/2;
-    if ~isnan(current_log_like) && ...
-            ((delta_fval/avg_fval < 1e-8) || ...
-            (sum(log_like) - current_log_like < - 2*eps))
-        
-        % if log-likelihood went down, then return previous result
-        % save previous results
-        if (sum(log_like) - current_log_like < - 2*eps)
-            P     = Pbest;             % Parameters
-            gamma = gamma_best;        % Expectation
-            log_like = log_like_best;  % Loglikelihood
-        end
+    delta_fval = (sum(log_like) - current_log_like);
+    
+    if delta_fval<0 
+        fprintf('likelihood decreased... exiting\n'); 
+        P     = Pbest;             % Parameters
+        gamma = gamma_best;        % Expectation
+        log_like = log_like_best;  % Loglikelihood
+        not_exit = false;
+    elseif delta_fval<10e-3
+        fprintf('likelihood changed less than 10e-3... exiting\n'); 
+        not_exit = false;
+    elseif n_iteration > maxIter 
+        fprintf('maximal number of iterations reached... exiting\n'); 
         not_exit = false;
     else
         % save previous results
@@ -185,13 +191,13 @@ while not_exit
         if Model.fit_T
             T = marg_epsilon/sum(numTrials);
             
-            self_t = sum(numStay)/sum(numTrials); 
+            P.self_t = sum(numStay)/sum(numTrials); 
         end
         if Model.fit_T && Model.diagonal_T
             % Transition probability probability of self-transition
             T = ((ones(n_chunks, n_chunks)-eye(n_chunks))*...
-                (1-self_t))/(n_chunks-1) + ...
-                eye(n_chunks)*self_t;
+                (1-P.self_t))/(n_chunks-1) + ...
+                eye(n_chunks)*P.self_t;
         end
         
         P.initial_dist = gammaInit; 

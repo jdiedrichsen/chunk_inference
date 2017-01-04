@@ -1,49 +1,26 @@
-function [start_pause, nonstart_pause] = learn_pause(chunks, data, gamma)
-% function [start_pause, nonstart_pause] = learn_pause(chunks, data, gamma)
+function [pause, inchunk,res1,res2] = learn_pause(data, p_boundary)
+% function [start_pause, nonstart_pause] = learn_pause(data, p_boundary)
 % learn pause at the start of chunk and pause not at the start
 % based on probability of chunks in matrix gamma for the data `data`
 % indicator variable for when chunk starts
 % Ignores NaNs in the data 
 % Parameters: 
-%   chunks: Possible chunking structures (nChunks x nMovements) 
-%   data:   Data to learn from (nTrials x nMovements) 
-%   gamma:  Posterior probability of the hidden state (nTrials x nChunks) 
+%   data:        Data to learn from (nTrials x nMovements) 
+%   p_boundary:  Posterior probability of the hidden state (nTrials x nChunks) 
 % Returns: 
-%   start_pause: Value for beginning of chunk 
-%   nonstart_pause: Value for the end of chunk 
-ind_chunk = diff([zeros(size(chunks, 1), 1) ...
-    chunks], 1, 2)>0;
-sum_mean_pause = 0;
-n_mean_pause = 0;
-n_chunks = size(chunks, 1);
-for i = 1:n_chunks
-    tmp_sem = bsxfun(@times, data, ...
-        ind_chunk(i, :));
-    tmp_sem = bsxfun(@times, tmp_sem, gamma(:, i));
-    sum_mean_pause = sum_mean_pause + ...
-        nansum(tmp_sem(:));
-    % Now check how many observations we have 
-    tmp_ind = bsxfun(@times,~isnan(data),ind_chunk(i, :)); 
-    tmp_ind = bsxfun(@times,tmp_ind,gamma(:, i)); 
-    n_mean_pause = n_mean_pause + ...
-         sum(tmp_ind(:));
-end
-start_pause = sum_mean_pause / n_mean_pause;
+%   pause:      Mean Value for beginning of chunk 
+%   inchunk:    Mean Value for within chunk 
+%   res1:       Residual, assuming pause
+%   res2:       REsidual, assuming withinchunk 
 
-% indicator variable for when chunk not started
-ind_chunk = ~ind_chunk;
-sum_mean_pause = 0;
-n_mean_pause = 0;
-for i = 1:n_chunks
-    tmp_sem = bsxfun(@times, data, ...
-        ind_chunk(i, :));
-    tmp_sem = bsxfun(@times, tmp_sem, gamma(:, i));
-    sum_mean_pause = sum_mean_pause + ...
-        nansum(tmp_sem(:));
-    % Now check how many observations we have 
-    tmp_ind = bsxfun(@times,~isnan(data),ind_chunk(i, :)); 
-    tmp_ind = bsxfun(@times,tmp_ind,gamma(:, i)); 
-    n_mean_pause = n_mean_pause + ...
-         sum(tmp_ind(:));
-end
-nonstart_pause = sum_mean_pause / n_mean_pause;
+% Mean for the chunk having started 
+indx=~isnan(data);
+d=data(indx); 
+w=p_boundary(indx); 
+pause = sum(d.*w)/sum(w);
+res1 = data-pause; 
+
+% Mean for within chunk 
+w=1-p_boundary(indx); 
+inchunk = sum(d.*w)/sum(w);
+res2 = data-inchunk; 

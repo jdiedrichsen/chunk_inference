@@ -1,35 +1,20 @@
-function v = learn_variance(chunks, data, gamma, start_pause, nonstart_pause, fit_mean)
-% function v = learn_variance(chunks, data, gamma, start_pause, nonstart_pause, fit_mean)
-% learn variance similar to learn_pause procedure
+function v = learn_variance(res1,res2, p_boundary,fit_rt_var)
+% function v = learn_variance(res1,res2, p_boundary)
+% learn variance similar
+% INPUT:
+%      res1:   Residuals under assumption that it is chunk boudnary
+%      res2:   Resdiaul under assumption that is is within chunk
+%      p_boundary: probability of being on the chunk boudnary
+%      fit_rt_var: 1: fir one single variance 2: fit seperate variances
 
-ind_chunk_start = diff([zeros(size(chunks, 1), 1) ...
-    chunks], 1, 2)>0;
-n_chunks = size(chunks, 1);
-n_seq_len = size(chunks, 2);
-
-goodData = ~isnan(data);   % Indicator for good data 
-tmp_var    = zeros(n_chunks, 1); % Sufficient stats for weighted sum-of-squares
-tmp_weight = zeros(n_chunks, 1); % Sufficient stats for the summed weights for good data 
-for i = 1:n_chunks
-    if fit_mean
-        % center movement_times
-        cmt = bsxfun(@minus, data, ...
-            ind_chunk_start(i, :)*start_pause + ...
-            (~ind_chunk_start(i, :))*nonstart_pause);
-        tmp = bsxfun(@times, cmt.^2, gamma(:, i));
-    else
-        % no centering needed - mean assumed to be zero
-        tmp = bsxfun(@times, data.^2, gamma(:, i));
-    end
-    tmp_var(i) = nansum(tmp(:));
-
-    % Keep track of how much data we have for each structure (weighted by
-    % Gamma). 
-    tmp_weight(i) = sum(sum(bsxfun(@times,goodData,gamma(:, i)))); 
-end
-v = sum(tmp_var)/sum(sum(tmp_weight));
-% Comment (JD): this seems to be a unnecessary complication? Since we are
-% using all available data, we can just devide by the number of good data points: 
-% sum(tmp_var)/sum(sum(goodData));
-% Should get indentical results: or do we have a case in which gamma, over
-% the different chunking structures does not sum to 1? 
+indx=~isnan(res1);
+d1=res1(indx);
+d2=res2(indx);
+w=p_boundary(indx);
+switch(fit_rt_var)
+    case 1
+        v = sum((d1.^2).*w+(d2.^2).*(1-w))/sum(indx(:));
+    case 2
+        v(1,1) = sum((d1.^2).*w)/sum(w);
+        v(1,2) = sum((d2.^2).*(1-w))/sum(1-w);
+end;

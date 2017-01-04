@@ -28,6 +28,9 @@ end
 
 [n,d] = size(X); 
 
+
+
+
 logp = NaN(n,1);
 missRows = ~isnan(X);
 
@@ -38,12 +41,11 @@ numPatterns = size(missPattern,1);
 for i=1:numPatterns
     indx = find(pat==i);
     nnan = missPattern(i,:);
-    logp(indx) = gLP(mu(nnan), Sigma(nnan,nnan), X(indx,nnan));
+    logp(indx) = gLP(Sigma(nnan,nnan), X(indx,nnan));
 end;
 
-function logp = gLP(mu,Sigma,X);
+function logp = gLP(Sigma,X);
 d = size(X,2); 
-X = bsxfun(@minus, X, rowvec(mu));
 R    = chol(Sigma);
 logp = -0.5*sum((X/R).^2, 2);
 logZ = 0.5*d*log(2*pi) + sum(log(diag(R)));

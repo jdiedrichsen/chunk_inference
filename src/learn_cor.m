@@ -1,5 +1,5 @@
-function rho = learn_cor(chunks, cor_chunks, data, gamma, ...
-    start_pause, nonstart_pause, variance, fit_mean)
+function rho = learn_cor(chunks, cor_chunks, res1,res2,gamma,variance)
+% function rho = learn_cor(chunks, cor_chunks, res1,res2,gamma,variance)
 % learn correlation
 
 ind_chunk_start = diff([zeros(size(chunks, 1), 1) ...
@@ -12,16 +12,10 @@ tmp_cov = 0;
 tmp_var = 0;
 n_COV   = 0; 
 n_VAR   = 0; 
-goodData=~isnan(data); 
+goodData=~isnan(res1); 
 for i = 1:n_chunks
-    if fit_mean
-        % center movement_times
-        cmt = bsxfun(@minus, data, ...
-            ind_chunk_start(i, :)*start_pause + ...
-            (~ind_chunk_start(i, :))*nonstart_pause);
-    else
-        cmt = mt_seq;
-    end
+	cmt = bsxfun(@times,ind_chunk_start(i, :),res1) + ... 
+        bsxfun(@times,1-ind_chunk_start(i, :),res2);
     % Old version: 
     % Sigma = ((bsxfun(@times, cmt, gamma(2:end, i)))'*cmt) .* ...
     %     cor_chunks(:, :, i) .* (1-eye(n_seq_len));

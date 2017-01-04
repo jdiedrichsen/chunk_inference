@@ -25,11 +25,13 @@ end
 if isempty(Model.chunks)
     chunks = create_chunks3();    
 end
-cor_chunks = to_corr_chunks(Model.chunks);
 n_chunks = size(Model.chunks, 1);
 
-if (Model.fit_rt) 
-    [chunk_means_mt, mt_cov] = create_chunk_means_covs(Model,P,'mt'); 
+switch(Model.fit_rt)
+    case 1 
+        [chunk_means_mt, mt_cov] = create_chunk_means_covs(Model,P,'mt'); 
+    case 2
+        [chunk_means_mt, mt_cov] = create_chunk_means_covs(Model,P,'mt',Data.trialNum);
 end; 
 if (Model.fit_er) 
     [chunk_means_er, er_cov] = create_chunk_means_covs(Model,P,'er'); 
@@ -42,16 +44,16 @@ p_obs = zeros(n_time, n_chunks);
 for i = 1:n_chunks
     if Model.fit_rt && Model.fit_er    
         p_obs(:, i) = ...
-            gaussLogprob(chunk_means_mt(i, :)', ...
+            gaussLogprob(chunk_means_mt(:,:,i), ...
                     mt_cov(:, :, i), Data.mt_seq) + ...
-            gaussLogprob(chunk_means_er(i, :)', ...
+            gaussLogprob(chunk_means_er(:,:,i), ...
                     er_cov(:, :, i), Data.er_seq);
     elseif Model.fit_rt
         p_obs(:, i) = ...
-            gaussLogprob(chunk_means_mt(i, :)', ...
+            gaussLogprob(chunk_means_mt(:,:,i), ...
             mt_cov(:, :, i), Data.mt_seq);
     else
-        p_obs(:, i) = gaussLogprob(chunk_means_er(i, :)', ...
+        p_obs(:, i) = gaussLogprob(chunk_means_er(:,:,i), ...
             er_cov(:, :, i), Data.er_seq);
     end
 end
